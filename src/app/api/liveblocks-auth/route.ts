@@ -9,10 +9,10 @@ const liveblocks = new Liveblocks({
 });
 
 export async function POST(req: Request) {
-  const { sessionClaims } = await auth();
+  const { sessionClaims, orgId } = await auth();
 
   if (!sessionClaims) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response(JSON.stringify({ error: "Unauthorized: sessionClaims missing" }), { status: 401 });
   }
 
   const user = await currentUser();
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
   const isOwner = document.ownerId === user.id;
   const isOrganizationMember = !!(
-    document.organizationId && document.organizationId === sessionClaims.org_id
+    document.organizationId && document.organizationId === orgId
   );
 
   if (!isOwner && !isOrganizationMember) {
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   const nameToNumber = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const hue = Math.abs(nameToNumber) % 360
   const color = `hsl(${hue}, 80%, 60%)`;
-  
+
   const session = liveblocks.prepareSession(user.id, {
     userInfo: {
       name,
