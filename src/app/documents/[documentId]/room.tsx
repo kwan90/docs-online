@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { FullscreenLoader } from "@/components/fullscreen-loader";
 import { getUsers, getDocuments } from "./action";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/nextjs";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { LEFT_MARGIN_DEFAULT, RIGHT_MARGIN_DEFAULT } from "@/constants/margins";
 
@@ -13,6 +14,7 @@ type User = { id: string; name: string; avatar: string; color: string; };
 
 export function Room({ children }: { children: ReactNode }) {
   const params = useParams();
+  const { getToken } = useAuth();
 
   const [users, setUsers] = useState<User[]>([]);
 
@@ -38,11 +40,20 @@ export function Room({ children }: { children: ReactNode }) {
       authEndpoint={async () => {
         const endpoint = "/api/liveblocks-auth";
         const room = params.documentId as string;
+        const token = await getToken();
 
         const response = await fetch(endpoint, {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           body: JSON.stringify({ room }),
         });
+
+        if (!response.ok) {
+          throw new Error("Unauthorized");
+        }
 
         return await response.json();
       }}
