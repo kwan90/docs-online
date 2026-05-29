@@ -1,10 +1,7 @@
-import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
 import { Button } from "@/components/ui/button";
-import { Copy, ExternalLinkIcon, FilePenIcon, Link, MoreVertical, TrashIcon } from "lucide-react";
+import { ExternalLinkIcon, FilePenIcon, Link, MoreVertical, TrashIcon } from "lucide-react";
 import { RemoveDialog } from "@/components/remove-dialog";
 import { Id } from "../../../convex/_generated/dataModel";
-import { api } from "../../../convex/_generated/api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { RenameDialog } from "@/components/rename-dialog";
 import { ShareDialog } from "@/components/share-dialog";
-import { toast } from "sonner";
 
 interface DocumentMenuProps {
   documentId: Id<"documents">;

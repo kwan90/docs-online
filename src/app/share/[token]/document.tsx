@@ -7,7 +7,7 @@ import { PublicRoom } from "./room";
 import { Editor } from "../../documents/[documentId]/editor";
 import { Navbar } from "../../documents/[documentId]/navbar";
 import { Toolbar } from "../../documents/[documentId]/toolbar";
-import { Globe, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 
 interface PublicDocumentProps {
   document: Doc<"documents">;
