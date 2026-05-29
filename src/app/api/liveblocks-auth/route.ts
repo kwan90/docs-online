@@ -10,22 +10,58 @@ const liveblocks = new Liveblocks({
 
 export async function POST(req: Request) {
   const { sessionClaims, orgId } = await auth();
+  const user = await currentUser();
+  const { room, publicToken } = await req.json();
 
+  // Handle public token access (any user — authenticated or not)
+  if (publicToken) {
+    try {
+      const document = await convex.query(api.documents.getByPublicToken, { publicToken });
+
+      if (!document || document._id !== room) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+
+      // If user is authenticated, use their info; otherwise use anonymous
+      const displayName = user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? "Anonymous";
+      const sessionUserId = user?.id ?? `public-${publicToken}`;
+      const nameToNumber = displayName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const hue = Math.abs(nameToNumber) % 360;
+      const color = `hsl(${hue}, 80%, 60%)`;
+
+      const session = liveblocks.prepareSession(sessionUserId, {
+        userInfo: {
+          name: displayName,
+          avatar: user?.imageUrl ?? "",
+          color,
+        },
+      });
+
+      // Grant read-only access for public view, full access for public edit
+      const accessLevel = document.publicAccessType === "edit"
+        ? session.FULL_ACCESS
+        : session.READ_ACCESS;
+
+      session.allow(room, accessLevel);
+      const { body, status } = await session.authorize();
+
+      return new Response(body, { status });
+    } catch {
+      return new Response("Unauthorized", { status: 401 });
+    }
+  }
+
+  // Handle authenticated user access (owner / org member)
   if (!sessionClaims) {
     return new Response(JSON.stringify({ error: "Unauthorized: sessionClaims missing" }), { status: 401 });
   }
 
-  const user = await currentUser();
-
   if (!user) {
-    console.log('401 users');
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { room } = await req.json();
   const document = await convex.query(api.documents.getById, { id: room });
   if (!document) {
-    console.log('401 docs');
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -38,12 +74,11 @@ export async function POST(req: Request) {
   const isOwner = document.ownerId === user.id;
   const currentOrgId = orgId || (sessionClaims as any)?.org_id || (sessionClaims as any)?.organization_id;
   const isOrganizationMember = !!(
-    document.organizationId && 
+    document.organizationId &&
     (document.organizationId === currentOrgId || userOrgIds.includes(document.organizationId))
   );
 
   if (!isOwner && !isOrganizationMember) {
-    console.log('401 owner, orgsmember');
     return new Response("Unauthorized", { status: 401 });
   }
 

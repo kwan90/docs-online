@@ -13,10 +13,12 @@ import {
   FilePlusIcon,
   FileTextIcon,
   GlobeIcon,
+  HistoryIcon,
   ItalicIcon,
   PrinterIcon,
   Redo2Icon,
   RemoveFormattingIcon,
+  ShareIcon,
   StrikethroughIcon,
   TextIcon,
   // TrashIcon,
@@ -25,6 +27,7 @@ import {
 } from "lucide-react";
 
 import { RenameDialog } from "@/components/rename-dialog";
+import { ShareDialog } from "@/components/share-dialog";
 // import { RemoveDialog } from "@/components/remove-dialog";
 import {
   Menubar,
@@ -50,14 +53,18 @@ import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useActivityStore } from "@/store/use-activity-store";
 
 interface NavbarProps {
   data: Doc<"documents">;
+  hideShareButton?: boolean;
 }
 
-export const Navbar = ({ data }: NavbarProps) => {
+export const Navbar = ({ data, hideShareButton = false }: NavbarProps) => {
   const router = useRouter();
   const { editor } = useEditorStore();
+  const { toggleActivity } = useActivityStore();
 
   const mutation = useMutation(api.documents.create);
   const onNewDocument = () => {
@@ -261,6 +268,25 @@ export const Navbar = ({ data }: NavbarProps) => {
         </div>
       </div>
       <div className="flex gap-3 items-center pl-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleActivity();
+          }}
+        >
+          <HistoryIcon className="size-4 mr-2" />
+          History
+        </Button>
+        {!hideShareButton && (
+          <ShareDialog documentId={data._id}>
+            <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+              <ShareIcon className="size-4 mr-2" />
+              Share
+            </Button>
+          </ShareDialog>
+        )}
         <Avatars />
         <Inbox />
         <OrganizationSwitcher
